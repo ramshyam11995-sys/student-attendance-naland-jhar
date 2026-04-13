@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard — ID Verification</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:      #080c14;
+      --surface: #0f172a;
+      --card:    #111827;
+      --border:  #1e293b;
+      --accent:  #6ee7b7;
+      --blue:    #3b82f6;
+      --purple:  #8b5cf6;
+      --green:   #34d399;
+      --red:     #f87171;
+      --yellow:  #fbbf24;
+      --text:    #f1f5f9;
+      --muted:   #64748b;
+      --font:    'Sora', sans-serif;
+      --mono:    'JetBrains Mono', monospace;
+      --r:       12px;
+    }
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:var(--font); background:var(--bg); color:var(--text); min-height:100vh; }
+
+    body::before {
+      content:''; position:fixed; inset:0;
+      background-image:
+        linear-gradient(rgba(110,231,183,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(110,231,183,.03) 1px, transparent 1px);
+      background-size:48px 48px; pointer-events:none; z-index:0;
+    }
+
+    /* ── Topbar ─────────────────────────────────────────────────────── */
+    .topbar {
+      position:sticky; top:0; z-index:100;
+      background:rgba(8,12,20,.9); backdrop-filter:blur(12px);
+      border-bottom:1px solid var(--border);
+      padding:.9rem 2rem;
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .topbar-left { display:flex; align-items:center; gap:.75rem; }
+    .logo {
+      width:36px; height:36px;
+      background:linear-gradient(135deg,var(--blue),var(--purple));
+      border-radius:9px; display:grid; place-items:center; font-size:1.1rem;
+    }
+    .topbar h2 {
+      font-size:1.05rem; font-weight:700;
+      background:linear-gradient(135deg,var(--text) 40%,var(--accent));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    }
+    .topbar-right { display:flex; align-items:center; gap:.75rem; }
+
+    .user-chip {
+      display:flex; align-items:center; gap:.4rem;
+      background:var(--card); border:1px solid var(--border);
+      border-radius:99px; padding:.35rem .8rem;
+      font-size:.78rem; color:var(--muted); font-family:var(--mono);
+    }
+
+    .btn-sm {
+      background:none; border:1px solid var(--border);
+      color:var(--muted); border-radius:var(--r);
+      padding:.4rem .85rem; font-family:var(--font);
+      font-size:.8rem; cursor:pointer;
+      display:flex; align-items:center; gap:.35rem;
+      transition:all .2s;
+    }
+    .btn-sm:hover { border-color:var(--red); color:var(--red); }
+    .btn-sm.refresh:hover { border-color:var(--blue); color:var(--blue); }
+    .btn-sm.spinning svg { animation:spin .7s linear infinite; }
+
+    /* ── Main ───────────────────────────────────────────────────────── */
+    main { max-width:1200px; margin:0 auto; padding:2rem 1.5rem 4rem; position:relative; z-index:1; }
+
+    /* ── Stats ──────────────────────────────────────────────────────── */
+    .stats {
+      display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+      gap:1rem; margin-bottom:2rem;
+    }
+    .stat-card { background:var(--card); border:1px solid var(--border); border-radius:var(--r); padding:1.2rem 1.4rem; }
+    .stat-label { font-size:.72rem; font-weight:600; color:var(--muted); letter-spacing:.07em; text-transform:uppercase; margin-bottom:.35rem; }
+    .stat-value { font-size:1.9rem; font-weight:700; font-family:var(--mono); }
+
+    /* ── Filters ────────────────────────────────────────────────────── */
+    .filters { display:flex; align-items:center; gap:.5rem; margin-bottom:1.5rem; flex-wrap:wrap; }
+    .filter-btn {
+      background:var(--card); border:1px solid var(--border); color:var(--muted);
+      border-radius:99px; padding:.32rem .85rem; font-family:var(--font);
+      font-size:.8rem; cursor:pointer; transition:all .2s;
+    }
+    .filter-btn:hover  { border-color:var(--blue); color:var(--blue); }
+    .filter-btn.active { background:var(--blue); border-color:var(--blue); color:#fff; }
+
+    /* ── Grid ───────────────────────────────────────────────────────── */
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(310px,1fr)); gap:1.25rem; }
+
+    .app-card {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:calc(var(--r)*1.3); overflow:hidden;
+      transition:transform .2s,box-shadow .2s;
+      animation:fadeIn .35s ease both;
+    }
+    .app-card:hover { transform:translateY(-3px); box-shadow:0 12px 35px rgba(0,0,0,.4); }
+
+    .card-image {
+      position:relative; height:165px; background:var(--bg);
+      overflow:hidden; cursor:pointer;
+    }
+    .card-image img { width:100%; height:100%; object-fit:cover; transition:transform .3s; }
+    .card-image:hover img { transform:scale(1.04); }
+    .img-overlay { position:absolute; inset:0; background:linear-gradient(to bottom,transparent 50%,rgba(8,12,20,.8)); }
+    .zoom-hint {
+      position:absolute; bottom:.5rem; right:.5rem;
+      background:rgba(0,0,0,.6); border-radius:7px; padding:.15rem .45rem;
+      font-size:.7rem; color:var(--muted); opacity:0; transition:opacity .2s;
+    }
+    .card-image:hover .zoom-hint { opacity:1; }
+
+    .card-body { padding:1.1rem 1.2rem; }
+    .card-name { font-size:1rem; font-weight:700; margin-bottom:.25rem; }
+    .card-wa   { font-size:.78rem; font-family:var(--mono); color:var(--muted); margin-bottom:.8rem; }
+
+    .card-meta { display:flex; align-items:center; justify-content:space-between; margin-bottom:.9rem; }
+
+    .status-badge {
+      display:inline-flex; align-items:center; gap:.3rem;
+      font-size:.7rem; font-weight:600; font-family:var(--mono);
+      letter-spacing:.05em; text-transform:uppercase;
+      padding:.22rem .65rem; border-radius:99px;
+    }
+    .status-badge::before { content:'●'; font-size:.5rem; }
+    .status-badge.pending  { background:rgba(251,191,36,.1); border:1px solid rgba(251,191,36,.3); color:var(--yellow); }
+    .status-badge.approved { background:rgba(52,211,153,.1); border:1px solid rgba(52,211,153,.3); color:var(--green);  }
+    .status-badge.rejected { background:rgba(248,113,113,.1); border:1px solid rgba(248,113,113,.3); color:var(--red);   }
+
+    .card-date { font-size:.7rem; color:var(--muted); font-family:var(--mono); }
+
+    .card-actions { display:flex; gap:.55rem; }
+    .btn {
+      flex:1; padding:.58rem; border:none; border-radius:var(--r);
+      font-family:var(--font); font-size:.8rem; font-weight:600;
+      cursor:pointer; display:flex; align-items:center; justify-content:center; gap:.35rem;
+      transition:opacity .2s,transform .15s;
+    }
+    .btn:hover:not(:disabled)  { opacity:.85; transform:translateY(-1px); }
+    .btn:active:not(:disabled) { transform:translateY(0); }
+    .btn:disabled { opacity:.3; cursor:not-allowed; }
+    .btn-approve { background:linear-gradient(135deg,#059669,#34d399); color:#fff; }
+    .btn-reject  { background:linear-gradient(135deg,#991b1b,#f87171); color:#fff; }
+
+    .empty { grid-column:1/-1; text-align:center; padding:4rem 2rem; color:var(--muted); }
+    .empty-icon { font-size:3rem; margin-bottom:1rem; }
+
+    /* ── Lightbox ───────────────────────────────────────────────────── */
+    .lightbox {
+      display:none; position:fixed; inset:0; z-index:200;
+      background:rgba(0,0,0,.9); backdrop-filter:blur(6px);
+      align-items:center; justify-content:center; padding:1.5rem;
+    }
+    .lightbox.open { display:flex; animation:fadeIn .2s ease; }
+    .lightbox img { max-width:90vw; max-height:85vh; object-fit:contain; border-radius:var(--r); }
+    .lb-close {
+      position:absolute; top:1rem; right:1.5rem;
+      background:rgba(255,255,255,.1); border:none; color:#fff;
+      font-size:1.4rem; cursor:pointer; width:40px; height:40px;
+      border-radius:50%; display:grid; place-items:center; transition:background .2s;
+    }
+    .lb-close:hover { background:rgba(255,255,255,.2); }
+
+    /* ── Toasts ─────────────────────────────────────────────────────── */
+    #toastBox { position:fixed; bottom:1.5rem; right:1.5rem; z-index:300; display:flex; flex-direction:column; gap:.4rem; pointer-events:none; }
+    .toast-item {
+      padding:.7rem 1.1rem; border-radius:var(--r); font-size:.83rem;
+      pointer-events:all; animation:slideR .3s ease; min-width:230px;
+    }
+    .toast-item.success { background:rgba(52,211,153,.12); border:1px solid rgba(52,211,153,.3); color:var(--green); }
+    .toast-item.error   { background:rgba(248,113,113,.12); border:1px solid rgba(248,113,113,.3); color:var(--red);   }
+    .toast-item.info    { background:rgba(59,130,246,.12);  border:1px solid rgba(59,130,246,.3);  color:var(--blue);  }
+
+    /* ── Auth overlay (shown while checking session) ─────────────────── */
+    #authOverlay {
+      position:fixed; inset:0; background:var(--bg);
+      display:grid; place-items:center; z-index:500;
+      font-size:1rem; color:var(--muted);
+    }
+
+    @keyframes fadeIn  { from{opacity:0;}            to{opacity:1;}           }
+    @keyframes spin    { to{transform:rotate(360deg);}                         }
+    @keyframes slideR  { from{opacity:0;transform:translateX(20px);}  to{opacity:1;transform:translateX(0);} }
+
+    @media(max-width:600px){
+      .topbar { padding:.8rem 1rem; }
+      main    { padding:1.2rem 1rem 3rem; }
+      .grid   { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Auth check overlay — hidden once session confirmed -->
+  <div id="authOverlay">🔐 Checking session…</div>
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="logo">🛡️</div>
+      <h2>Admin Dashboard</h2>
+    </div>
+    <div class="topbar-right">
+      <div class="user-chip">👤 <span id="adminName">admin</span></div>
+      <button class="btn-sm refresh" id="refreshBtn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </svg>
+        Refresh
+      </button>
+      <button class="btn-sm" id="logoutBtn">🚪 Logout</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="stats">
+      <div class="stat-card"><div class="stat-label">Total</div>    <div class="stat-value" id="cTotal"    style="color:var(--blue)">—</div></div>
+      <div class="stat-card"><div class="stat-label">Pending</div>  <div class="stat-value" id="cPending"  style="color:var(--yellow)">—</div></div>
+      <div class="stat-card"><div class="stat-label">Approved</div> <div class="stat-value" id="cApproved" style="color:var(--green)">—</div></div>
+      <div class="stat-card"><div class="stat-label">Rejected</div> <div class="stat-value" id="cRejected" style="color:var(--red)">—</div></div>
+    </div>
+
+    <div class="filters">
+      <button class="filter-btn active" data-f="all">All</button>
+      <button class="filter-btn" data-f="pending">Pending</button>
+      <button class="filter-btn" data-f="approved">Approved</button>
+      <button class="filter-btn" data-f="rejected">Rejected</button>
+    </div>
+
+    <div class="grid" id="appGrid"></div>
+  </main>
+
+  <div class="lightbox" id="lightbox">
+    <button class="lb-close" id="lbClose">✕</button>
+    <img id="lbImg" src="" alt="ID Card" />
+  </div>
+
+  <div id="toastBox"></div>
+
+  <script>
+    const API    = "http://localhost:5000";
+    let allApps  = [];
+    let activeF  = "all";
+
+    const grid       = document.getElementById("appGrid");
+    const lightbox   = document.getElementById("lightbox");
+    const lbImg      = document.getElementById("lbImg");
+    const authOverlay= document.getElementById("authOverlay");
+
+    /* ── Auth check on load ──────────────────────────────────────────── */
+    (async () => {
+      try {
+        const r = await fetch(`${API}/admin/me`, { credentials: "include" });
+        const d = await r.json();
+        if (!d.authenticated) {
+          window.location.href = "login.html";
+          return;
+        }
+        document.getElementById("adminName").textContent = d.username;
+        authOverlay.style.display = "none";
+        loadApplications();
+      } catch {
+        authOverlay.textContent = "⚠️ Cannot reach server.";
+      }
+    })();
+
+    /* ── Logout ──────────────────────────────────────────────────────── */
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      await fetch(`${API}/admin/logout`, { method: "POST", credentials: "include" });
+      window.location.href = "login.html";
+    });
+
+    /* ── Load apps ───────────────────────────────────────────────────── */
+    const refreshBtn = document.getElementById("refreshBtn");
+    refreshBtn.addEventListener("click", loadApplications);
+
+    async function loadApplications() {
+      refreshBtn.classList.add("spinning");
+      try {
+        const r = await fetch(`${API}/applications`, { credentials: "include" });
+        if (r.status === 401) { window.location.href = "login.html"; return; }
+        const d = await r.json();
+        allApps = d.applications || [];
+        updateStats();
+        renderCards();
+      } catch {
+        showToast("error", "Cannot reach the backend.");
+      } finally {
+        refreshBtn.classList.remove("spinning");
+      }
+    }
+
+    function updateStats() {
+      document.getElementById("cTotal").textContent    = allApps.length;
+      document.getElementById("cPending").textContent  = allApps.filter(a=>a.status==="pending").length;
+      document.getElementById("cApproved").textContent = allApps.filter(a=>a.status==="approved").length;
+      document.getElementById("cRejected").textContent = allApps.filter(a=>a.status==="rejected").length;
+    }
+
+    function renderCards() {
+      const list = activeF === "all" ? allApps : allApps.filter(a => a.status === activeF);
+      if (!list.length) {
+        grid.innerHTML = `<div class="empty"><div class="empty-icon">📭</div>No ${activeF==="all"?"":""+activeF+" "}applications.</div>`;
+        return;
+      }
+      grid.innerHTML = list.map(buildCard).join("");
+      grid.querySelectorAll(".btn-approve").forEach(b => b.addEventListener("click", () => doAction("approve", +b.dataset.id, b)));
+      grid.querySelectorAll(".btn-reject" ).forEach(b => b.addEventListener("click", () => doAction("reject",  +b.dataset.id, b)));
+      grid.querySelectorAll(".card-image" ).forEach(el => el.addEventListener("click", () => { lbImg.src = el.dataset.src; lightbox.classList.add("open"); }));
+    }
+
+    function buildCard(app) {
+      const imgSrc = `${API}/uploads/${app.id_card_image}`;
+      const date   = new Date(app.created_at).toLocaleString("en-IN", {dateStyle:"medium",timeStyle:"short"});
+      return `
+        <div class="app-card">
+          <div class="card-image" data-src="${imgSrc}">
+            <img src="${imgSrc}" alt="ID of ${esc(app.name)}" loading="lazy"
+                 onerror="this.src='https://placehold.co/400x165/0f172a/475569?text=Not+Found'" />
+            <div class="img-overlay"></div>
+            <span class="zoom-hint">🔍 Zoom</span>
+          </div>
+          <div class="card-body">
+            <div class="card-name">${esc(app.name)}</div>
+            <div class="card-wa">📱 ${esc(app.whatsapp_number)}</div>
+            <div class="card-meta">
+              <span class="status-badge ${app.status}">${app.status}</span>
+              <span class="card-date">#${app.id} · ${date}</span>
+            </div>
+            <div class="card-actions">
+              <button class="btn btn-approve" data-id="${app.id}" ${app.status==="approved"?"disabled":""}>✓ ${app.status==="approved"?"Approved":"Approve"}</button>
+              <button class="btn btn-reject"  data-id="${app.id}" ${app.status==="rejected"?"disabled":""}>✕ ${app.status==="rejected"?"Rejected":"Reject"}</button>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    async function doAction(action, id, btn) {
+      btn.disabled = true;
+      btn.textContent = "⏳ Working…";
+      try {
+        const r = await fetch(`${API}/${action}/${id}`, { method:"POST", credentials:"include" });
+        if (r.status === 401) { window.location.href = "login.html"; return; }
+        const d = await r.json();
+        if (d.success) {
+          let msg = `${action==="approve"?"✅":"🚫"} Application #${id} ${action}d.`;
+          if (action==="approve" && d.whatsapp?.success) msg += " 📲 WhatsApp sent!";
+          if (action==="approve" && d.whatsapp?.error)   msg += ` ⚠️ ${d.whatsapp.error}`;
+          showToast(action==="approve"?"success":"info", msg);
+          loadApplications();
+        } else {
+          showToast("error", d.error || "Action failed.");
+          btn.disabled = false;
+        }
+      } catch {
+        showToast("error", "Network error."); btn.disabled = false;
+      }
+    }
+
+    /* ── Filters ─────────────────────────────────────────────────────── */
+    document.querySelectorAll(".filter-btn").forEach(b => {
+      b.addEventListener("click", () => {
+        document.querySelectorAll(".filter-btn").forEach(x => x.classList.remove("active"));
+        b.classList.add("active");
+        activeF = b.dataset.f;
+        renderCards();
+      });
+    });
+
+    /* ── Lightbox ────────────────────────────────────────────────────── */
+    document.getElementById("lbClose").addEventListener("click", () => lightbox.classList.remove("open"));
+    lightbox.addEventListener("click", e => { if (e.target===lightbox) lightbox.classList.remove("open"); });
+    document.addEventListener("keydown", e => { if (e.key==="Escape") lightbox.classList.remove("open"); });
+
+    /* ── Toast ───────────────────────────────────────────────────────── */
+    function showToast(type, msg) {
+      const el = document.createElement("div");
+      el.className = `toast-item ${type}`;
+      el.textContent = msg;
+      document.getElementById("toastBox").appendChild(el);
+      setTimeout(() => el.remove(), 5000);
+    }
+
+    function esc(s) {
+      return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+    }
+
+    // Auto-refresh every 30s
+    setInterval(loadApplications, 30_000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+# render.yaml — Deploy the Flask backend to Render.com (free tier)
+# Commit this file to the root of your Git repo.
+
+services:
+  - type: web
+    name: student-id-verification
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2
+    envVars:
+      - key: ADMIN_USERNAME
+        value: admin           # Change this!
+      - key: ADMIN_PASSWORD
+        value: Admin@1234      # Change this!
+      - key: SECRET_KEY
+        generateValue: true    # Render auto-generates a secure random value
+      - key: TWILIO_ACCOUNT_SID
+        value: ""              # Add your Twilio SID
+      - key: TWILIO_AUTH_TOKEN
+        value: ""              # Add your Twilio token
+      - key: TWILIO_WHATSAPP_FROM
+        value: "whatsapp:+14155238886"
