@@ -124,7 +124,9 @@ def send_whatsapp(to_number: str, message: str) -> dict:
 # ════════════════════════════════════════════════════════════════════════════
 #  PUBLIC ROUTES  (Students)
 # ════════════════════════════════════════════════════════════════════════════
-
+@app.route("/")
+def home():
+    return "Student ID Verification Backend is running "
 @app.route("/submit", methods=["POST"])
 def submit():
     name            = request.form.get("name", "").strip()
