@@ -127,6 +127,10 @@ def send_whatsapp(to_number: str, message: str) -> dict:
 @app.route("/")
 def home():
     return "Student ID Verification Backend is running "
+@app.route("/")
+def index():
+    from flask import render_template
+    return render_template("index.html")
 @app.route("/submit", methods=["POST"])
 def submit():
     name            = request.form.get("name", "").strip()
