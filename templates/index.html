@@ -111,13 +111,13 @@
     <form id="verifyForm" action="/submit" method="POST" enctype="multipart/form-data">
       <div class="field">
         <label for="name">Full Name <span class="req">*</span></label>
-        <input type="text" id="name" placeholder="e.g. Arjun Sharma" autocomplete="name" />
+        <input type="text" id="name" name="name" placeholder="e.g. Arjun Sharma" autocomplete="name" />
         <div class="field-error" id="nameErr">Please enter your full name.</div>
       </div>
 
       <div class="field">
         <label for="whatsapp">WhatsApp Number <span class="req">*</span></label>
-        <input type="tel" id="whatsapp" placeholder="+91 98765 43210" autocomplete="tel" />
+        <input type="tel" id="whatsapp" name="whatsapp" placeholder="+91 98765 43210" autocomplete="tel" />
         <div class="field-error" id="waErr">Please enter a valid WhatsApp number.</div>
       </div>
 
