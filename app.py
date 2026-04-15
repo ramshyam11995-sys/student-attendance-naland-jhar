@@ -3,7 +3,7 @@ Student ID Verification System — Flask Backend v2
 New: admin login/logout, session-based auth, password protection,
      all admin routes require @admin_required decorator.
 """
-
+from flask import render_template
 import os
 import sqlite3
 import hashlib
@@ -124,7 +124,7 @@ def send_whatsapp(to_number: str, message: str) -> dict:
 # ════════════════════════════════════════════════════════════════════════════
 #  PUBLIC ROUTES  (Students)
 # ════════════════════════════════════════════════════════════════════════════
-from flask import render_template
+
 
 @app.route("/")
 def home():
