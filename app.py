@@ -124,9 +124,11 @@ def send_whatsapp(to_number: str, message: str) -> dict:
 # ════════════════════════════════════════════════════════════════════════════
 #  PUBLIC ROUTES  (Students)
 # ════════════════════════════════════════════════════════════════════════════
+from flask import render_template
+
 @app.route("/")
 def home():
-    return "Student ID Verification Backend is running "
+    return render_template("index.html")
 @app.route("/")
 def index():
     from flask import render_template
