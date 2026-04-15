@@ -108,7 +108,7 @@
     <h1>ID Verification</h1>
     <p class="subtitle">Submit your college ID card for verification. You'll receive a WhatsApp notification once reviewed by admin.</p>
 
-    <form id="verifyForm" enctype="multipart/form-data" novalidate>
+    <form id="verifyForm" action="/submit" method="POST" enctype="multipart/form-data">
       <div class="field">
         <label for="name">Full Name <span class="req">*</span></label>
         <input type="text" id="name" placeholder="e.g. Arjun Sharma" autocomplete="name" />
