@@ -150,85 +150,201 @@
 
   <script>
     // ⚠️ Change this to your live domain when deployed, e.g. "https://yourapp.onrender.com"
-    const API_BASE = "https://student-attendance-naland-jhar-1.onrender.com";
+   
+const API_BASE = "https://student-attendance-naland-jhar-1.onrender.com";
 
-    const form       = document.getElementById("verifyForm");
-    const submitBtn  = document.getElementById("submitBtn");
-    const nameInput  = document.getElementById("name");
-    const waInput    = document.getElementById("whatsapp");
-    const fileInput  = document.getElementById("idCard");
-    const uploadArea = document.getElementById("uploadArea");
-    const filePreview= document.getElementById("filePreview");
-    const previewImg = document.getElementById("previewImg");
-    const fileNameEl = document.getElementById("fileName");
-    const removeBtn  = document.getElementById("removeFile");
-    const toast      = document.getElementById("toast");
+const form       = document.getElementById("verifyForm");
+const submitBtn  = document.getElementById("submitBtn");
+const nameInput  = document.getElementById("name");
+const waInput    = document.getElementById("whatsapp");
+const fileInput  = document.getElementById("idCard") || document.getElementById("fileInput");
 
-    uploadArea.addEventListener("dragover",  e => { e.preventDefault(); uploadArea.classList.add("drag-over"); });
-    uploadArea.addEventListener("dragleave", ()  => uploadArea.classList.remove("drag-over"));
-    uploadArea.addEventListener("drop", e => {
-      e.preventDefault(); uploadArea.classList.remove("drag-over");
-      if (e.dataTransfer.files.length) { fileInput.files = e.dataTransfer.files; handleFile(fileInput.files[0]); }
-    });
+const uploadArea  = document.getElementById("uploadArea");
+const filePreview = document.getElementById("filePreview");
+const previewImg  = document.getElementById("previewImg");
+const fileNameEl  = document.getElementById("fileName");
+const removeBtn   = document.getElementById("removeFile");
+const toast       = document.getElementById("toast");
 
-    fileInput.addEventListener("change", () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); });
 
-    function handleFile(file) {
-      fileNameEl.textContent = file.name;
-      clearErr("fileErr");
-      if (file.type.startsWith("image/")) {
-        const r = new FileReader();
-        r.onload = e => { previewImg.src = e.target.result; };
-        r.readAsDataURL(file);
-      } else {
-        previewImg.src = "https://cdn-icons-png.flaticon.com/512/337/337946.png";
-      }
-      filePreview.classList.add("visible");
+// DRAG & DROP
+if(uploadArea){
+uploadArea.addEventListener("dragover", e=>{
+  e.preventDefault();
+  uploadArea.classList.add("drag-over");
+});
+
+uploadArea.addEventListener("dragleave", ()=>{
+  uploadArea.classList.remove("drag-over");
+});
+
+uploadArea.addEventListener("drop", e=>{
+  e.preventDefault();
+  uploadArea.classList.remove("drag-over");
+
+  if(e.dataTransfer.files.length){
+    fileInput.files = e.dataTransfer.files;
+    handleFile(fileInput.files[0]);
+  }
+});
+}
+
+
+// FILE INPUT CHANGE
+fileInput.addEventListener("change", ()=>{
+  if(fileInput.files.length>0){
+    handleFile(fileInput.files[0]);
+  }
+});
+
+
+// HANDLE FILE
+function handleFile(file){
+
+  if(fileNameEl){
+    fileNameEl.innerText = "Selected: " + file.name;
+  }
+
+  clearErr("fileErr");
+
+  if(filePreview){
+    filePreview.classList.add("visible");
+  }
+
+  if(previewImg){
+
+    if(file.type.startsWith("image/")){
+      const reader = new FileReader();
+      reader.onload = e=>{
+        previewImg.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+    else{
+      previewImg.src = "https://cdn-icons-png.flaticon.com/512/337/337946.png";
     }
 
-    removeBtn.addEventListener("click", () => {
-      fileInput.value = "";
-      filePreview.classList.remove("visible");
+  }
+}
+
+
+// REMOVE FILE
+if(removeBtn){
+removeBtn.addEventListener("click", ()=>{
+  fileInput.value = "";
+  if(filePreview) filePreview.classList.remove("visible");
+  if(fileNameEl) fileNameEl.innerText = "";
+});
+}
+
+
+// ERROR HANDLING
+function showErr(id,msg){
+  const el = document.getElementById(id);
+  if(!el) return;
+  if(msg) el.textContent = msg;
+  el.classList.add("visible");
+}
+
+function clearErr(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.classList.remove("visible");
+}
+
+
+// VALIDATION
+function validate(){
+  let ok=true;
+
+  if(nameInput && !nameInput.value.trim()){
+    showErr("nameErr");
+    ok=false;
+  } else clearErr("nameErr");
+
+  if(waInput && (!waInput.value.trim() || waInput.value.trim().length<7)){
+    showErr("waErr");
+    ok=false;
+  } else clearErr("waErr");
+
+  if(!fileInput.files[0]){
+    showErr("fileErr");
+    ok=false;
+  } else clearErr("fileErr");
+
+  return ok;
+}
+
+
+// FORM SUBMIT
+if(form){
+form.addEventListener("submit", async e=>{
+
+  e.preventDefault();
+  if(toast) toast.className="toast";
+
+  if(!validate()) return;
+
+  const fd = new FormData();
+  fd.append("name",nameInput.value.trim());
+  fd.append("whatsapp_number",waInput.value.trim());
+  fd.append("id_card",fileInput.files[0]);
+
+  submitBtn.classList.add("loading");
+  submitBtn.disabled=true;
+
+  try{
+
+    const res = await fetch(${API_BASE}/submit,{
+      method:"POST",
+      body:fd
     });
 
-    function showErr(id, msg) { const el=document.getElementById(id); if(msg) el.textContent=msg; el.classList.add("visible"); }
-    function clearErr(id)     { document.getElementById(id).classList.remove("visible"); }
+    const data = await res.json();
 
-    function validate() {
-      let ok = true;
-      if (!nameInput.value.trim())                                { showErr("nameErr"); ok=false; } else clearErr("nameErr");
-      if (!waInput.value.trim() || waInput.value.trim().length<7) { showErr("waErr");   ok=false; } else clearErr("waErr");
-      if (!fileInput.files[0])                                    { showErr("fileErr"); ok=false; } else clearErr("fileErr");
-      return ok;
+    if(res.ok && data.success){
+
+      if(toast){
+        toast.className="toast success";
+        toast.innerHTML = ✅ ${data.message};
+      }
+
+      form.reset();
+
+      if(filePreview) filePreview.classList.remove("visible");
+      if(fileNameEl) fileNameEl.innerText="";
+
+    }
+    else{
+
+      const msgs = data.errors ? data.errors.join("<br>") : (data.error || "Submission failed.");
+
+      if(toast){
+        toast.className="toast error";
+        toast.innerHTML = ❌ ${msgs};
+      }
+
     }
 
-    form.addEventListener("submit", async e => {
-      e.preventDefault(); toast.className="toast";
-      if (!validate()) return;
+  }catch{
 
-      const fd = new FormData();
-      fd.append("name",            nameInput.value.trim());
-      fd.append("whatsapp_number", waInput.value.trim());
-      fd.append("id_card",         fileInput.files[0]);
+    if(toast){
+      toast.className="toast error";
+      toast.innerHTML="❌ Could not reach the server.";
+    }
 
-      submitBtn.classList.add("loading"); submitBtn.disabled=true;
+  }
+  finally{
 
-      try {
-        const res  = await fetch(`${API_BASE}/submit`, { method:"POST", body:fd });
-        const data = await res.json();
-        if (res.ok && data.success) {
-          toast.className="toast success"; toast.innerHTML=`✅ ${data.message}`;
-          form.reset(); filePreview.classList.remove("visible");
-        } else {
-          const msgs = data.errors ? data.errors.join("<br>") : (data.error||"Submission failed.");
-          toast.className="toast error"; toast.innerHTML=`❌ ${msgs}`;
-        }
-      } catch {
-        toast.className="toast error"; toast.innerHTML="❌ Could not reach the server. Is Flask running?";
-      } finally {
-        submitBtn.classList.remove("loading"); submitBtn.disabled=false;
-      }
-    });
-  </script>
+    submitBtn.classList.remove("loading");
+    submitBtn.disabled=false;
+
+  }
+
+});
+}
+</script>
+    
+  
 </body>
 </html>
